@@ -2,16 +2,25 @@
 
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "include/personal_info.hpp"
 #include "include/pin_checker.hpp"
 
-using namespace project;
 int main() {
-  //   uint64_t pin_number;
-  char pin_number[16];
-  auto user = PersonalInfo();
+  // ! temporal value for test;
+  // TODO: read from database
+  std::unordered_map<std::string, project::PersonalInfo> pin_db;
+  pin_db["1111222233334441"] = project::PersonalInfo(100);
+  pin_db["1111222233334442"] = project::PersonalInfo(200);
+  pin_db["1111222233334443"] = project::PersonalInfo(300);
+  pin_db["1111222233334444"] = project::PersonalInfo(50);
+  pin_db["1111222233334445"] = project::PersonalInfo(0);
+
+  auto pin_checker = project::PinChecker();
+  pin_checker.set_db(pin_db);
+  auto user = project::PersonalInfo();
 
   std::cout << "\n\n \t\t\t WELCOME \n\n";
   std::cout << "\n\n \t\tATM is started! \n\n\n\n";
@@ -21,25 +30,28 @@ int main() {
     std::cin >> card;
 
     // match with known pin number from db
-    if (card.length() != 16) {
+    if (pin_checker.find_pin(card) == false) {
       std::cout << "\t[ERROR] PIN number: " << card.length()
                 << ". It must be 16 digits.\n";
       std::cout << "\tPlease retry\n";
       continue;
     }
-    user.set_id(card.c_str());
-    user.deposit(10);
-    strcpy(pin_number, card.c_str());
+    user = pin_checker.get_account_info(card);
+    // user.set_id(pin_checker.get_account_info(card).get_id());
+    // user.set_balance(pin_checker.get_account_info(card).get_balance());
+    // user.set_pin(pin_checker.get_account_info(card).get_pin());
     break;
   }
 
   while (true) {
     int select_num = 0;
-    std::cout << "\tYour PIN Number : " << pin_number << "\n";
+    std::cout << "Welcome " << user.get_id() << "\n";
+    std::cout << "\tYour PIN Number : " << user.get_pin() << "\n";
     std::cout << "\t\t1. Account Balance Inquiry.\n";
     std::cout << "\t\t2. Deposit.\n";
     std::cout << "\t\t3. Withdraw.\n";
     std::cout << "\t\t4. Exit.\n";
+
     std::cin >> select_num;
     std::cout << "\n\n";
     if (select_num > 4 || select_num < 1) {
@@ -51,13 +63,41 @@ int main() {
     switch (select_num) {
       case 1:
         std::cout << "Balance : " << user.get_balance() << "$.\n";
+        exit(1);
+        break;
       case 2: {
-        std::cout << "Enter Deposit Account : ";
-        char deposit_account[16];
-        // check
-        // deposit_account
+        std::cout << "Please enter the deposit amound: ";
+        int dollar = 0;
+        // TODO: counting dollar
+        std::cin >> dollar;
+        if (dollar < 0) {
+          std::cout << "[ERROR] This is not valid.\n";
+          exit(1);
+          break;
+        }
+        user.deposit(dollar);
+        std::cout << "Your Balance : " << user.get_balance() << "\n";
+        std::cout << "THANK YOU.\n";
+        exit(1);
+        break;
       }
-      case 3:
+      case 3: {
+        std::cout << "Enter Withdraw Amount : ";
+        int dollar = 0;
+        std::cin >> dollar;
+
+        if (user.get_balance() < dollar) {
+          std::cout << "[ERROR] There is not enough money.\n";
+          exit(1);
+          break;
+        }
+        // TODO: utilizing std::future
+        user.withdraw(dollar);
+        std::cout << "Your Balance : " << user.get_balance() << "\n";
+        std::cout << "THANK YOU.\n";
+        exit(1);
+        break;
+      }
       case 4:
         std::cout << "THANK YOU.\n";
         exit(1);
